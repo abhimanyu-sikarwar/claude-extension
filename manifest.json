@@ -4,12 +4,6 @@
     "version": "0.0.1",
     "description": "Exports Claude chat conversations as Markdown",
     "homepage_url": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown",
-    "browser_specific_settings": {
-        "gecko": {
-            "id": "{518f7e4f-a2c6-4587-af34-e06f3dbbf523}",
-            "strict_min_version": "109.0"
-        }
-    },
     "permissions": [
         "alarms",
         "storage",
@@ -34,10 +28,13 @@
                 "*://claude.ai/*"
             ],
             "js": [
+                "markdown-builder.js",
                 "content.js",
-                "download-button.js"
+                "download-button.js",
+                "bulk-export.js"
             ],
-            "run_at": "document_start"
+            "run_at": "document_end",
+            "all_frames": false
         },
         {
             "matches": [
@@ -47,7 +44,8 @@
                 "inject.js"
             ],
             "run_at": "document_start",
-            "world": "MAIN"
+            "world": "MAIN",
+            "all_frames": false
         }
     ],
     "action": {
@@ -60,5 +58,15 @@
                 "size": 32
             }
         ]
-    }
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "markdown-builder.js"
+            ],
+            "matches": [
+                "*://claude.ai/*"
+            ]
+        }
+    ]
 }
