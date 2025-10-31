@@ -1,0 +1,64 @@
+{
+    "manifest_version": 3,
+    "name": "Claude to Markdown",
+    "version": "0.0.1",
+    "description": "Exports Claude chat conversations as Markdown",
+    "homepage_url": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{518f7e4f-a2c6-4587-af34-e06f3dbbf523}",
+            "strict_min_version": "109.0"
+        }
+    },
+    "permissions": [
+        "alarms",
+        "storage",
+        "tabs"
+    ],
+    "host_permissions": [
+        "*://*.claude.ai/*"
+    ],
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
+    "content_security_policy": {
+        "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com https://claude.ai; font-src 'self'; object-src 'none'; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://claude.ai/*"
+            ],
+            "js": [
+                "content.js",
+                "download-button.js"
+            ],
+            "run_at": "document_start"
+        },
+        {
+            "matches": [
+                "*://claude.ai/*"
+            ],
+            "js": [
+                "inject.js"
+            ],
+            "run_at": "document_start",
+            "world": "MAIN"
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": "icons/icon.svg",
+        "theme_icons": [
+            {
+                "light": "icons/icon.svg",
+                "dark": "icons/icon.svg",
+                "size": 32
+            }
+        ]
+    }
+}
