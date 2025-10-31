@@ -13,14 +13,14 @@
         "*://*.claude.ai/*"
     ],
     "options_ui": {
-        "page": "options.html",
+        "page": "pages/options.html",
         "open_in_tab": false
     },
     "content_security_policy": {
         "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com https://claude.ai; font-src 'self'; object-src 'none'; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "src/background/background.js"
     },
     "content_scripts": [
         {
@@ -28,10 +28,10 @@
                 "*://claude.ai/*"
             ],
             "js": [
-                "markdown-builder.js",
-                "content.js",
-                "download-button.js",
-                "bulk-export.js"
+                "src/shared/markdown-builder.js",
+                "src/content/content.js",
+                "src/content/download-button.js",
+                "src/content/bulk-export.js"
             ],
             "run_at": "document_end",
             "all_frames": false
@@ -41,7 +41,7 @@
                 "*://claude.ai/*"
             ],
             "js": [
-                "inject.js"
+                "src/content/inject.js"
             ],
             "run_at": "document_start",
             "world": "MAIN",
@@ -49,7 +49,7 @@
         }
     ],
     "action": {
-        "default_popup": "popup.html",
+        "default_popup": "pages/popup.html",
         "default_icon": "icons/icon.svg",
         "theme_icons": [
             {
@@ -62,7 +62,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "markdown-builder.js"
+                "src/shared/markdown-builder.js"
             ],
             "matches": [
                 "*://claude.ai/*"
