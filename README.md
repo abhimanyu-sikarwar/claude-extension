@@ -44,7 +44,6 @@ This extension intercepts and captures Claude.ai conversation data, allowing you
 ## Project Structure
 
 ```
-```
 claude-extension/
 ├── src/                     # Source code
 │   ├── background/         # Background service worker
@@ -149,7 +148,7 @@ claude-extension/
 
 ### For Firefox
 The extension includes Firefox-specific settings in manifest.json:
-- Gecko ID: `{518f7e4f-a2c6-4587-af34-e06f3dbbf523}`
+- Gecko ID: `{@id}`
 - Minimum version: 109.0
 
 ## Usage
@@ -261,7 +260,7 @@ This project is licensed under Apache 2.0 License. See COPYING file for details.
 ## Links
 
 - Homepage: https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown
-- License: Apache 2.0 (see COPYING file)
+- License: Apache 2.0
 
 ## Author
 
