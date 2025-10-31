@@ -106,9 +106,9 @@
     }
 
     // Build markdown for a chat
-    function buildMarkdown(parsed, includeThinking = true) {
-        // Use the shared markdown builder (messageType defaults to 'all')
-        return window.ClaudeMarkdownBuilder.buildMarkdown(parsed, 'all', includeThinking);
+    function buildMarkdown(parsed, messageType = 'all', includeThinking = true) {
+        // Use the shared markdown builder with proper messageType
+        return window.ClaudeMarkdownBuilder.buildMarkdown(parsed, messageType, includeThinking);
     }
 
     // Download single markdown file
@@ -274,6 +274,7 @@
         // Get preferences
         const prefs = await chrome.storage.local.get(['exportPreferences']);
         const includeThinking = prefs.exportPreferences?.includeThinking ?? true;
+        const messageType = prefs.exportPreferences?.messageType || 'all'; // Get message type, default to 'all'
 
         // Show progress toast
         const toast = showProgressToast(selectedChats.length);
@@ -304,7 +305,7 @@
 
                     // Build markdown
                     updateProgress(i, selectedChats.length, `Exporting: ${chat.title}`);
-                    const markdown = buildMarkdown(chatData, includeThinking);
+                    const markdown = buildMarkdown(chatData, messageType, includeThinking);
 
                     // Download file
                     const filename = `${chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
