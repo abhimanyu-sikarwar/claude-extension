@@ -142,23 +142,22 @@
 
         // Method 7: Try window object with more patterns
         try {
-            // Check various window properties
-            const windowProps = [
-                'window.__NEXT_DATA__',
-                'window.__INITIAL_STATE__',
-                'window.__PRELOADED_STATE__',
-                'window.__APP_CONFIG__',
-                'window.claude_config'
+            // Check various window properties without using eval
+            const windowObjs = [
+                { name: 'window.__NEXT_DATA__', obj: window.__NEXT_DATA__ },
+                { name: 'window.__INITIAL_STATE__', obj: window.__INITIAL_STATE__ },
+                { name: 'window.__PRELOADED_STATE__', obj: window.__PRELOADED_STATE__ },
+                { name: 'window.__APP_CONFIG__', obj: window.__APP_CONFIG__ },
+                { name: 'window.claude_config', obj: window.claude_config }
             ];
 
-            for (const prop of windowProps) {
+            for (const { name, obj } of windowObjs) {
                 try {
-                    const obj = eval(prop);
                     if (obj) {
                         const jsonString = JSON.stringify(obj);
                         const match = jsonString.match(/([a-f0-9-]{36})/);
                         if (match) {
-                            console.log(`Got org ID from ${prop}:`, match[1]);
+                            console.log(`Got org ID from ${name}:`, match[1]);
                             return match[1];
                         }
                     }
@@ -261,54 +260,71 @@
       transition: all 0.3s ease;
     `;
 
-        toast.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-        <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1a1a1a;">
-          Exporting Chats
-        </h3>
-        <button id="cancel-export" style="
-          background: none;
-          border: none;
-          color: #6b7280;
-          cursor: pointer;
-          padding: 0;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 4px;
-          transition: background 0.2s;
-        " title="Cancel export">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <div style="margin-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span style="font-size: 12px; color: #6b7280;">
-            <span id="export-current">0</span> / <span id="export-total">${total}</span>
-          </span>
-          <span id="export-percentage" style="font-size: 12px; color: #6b7280;">0%</span>
-        </div>
-        <div style="
-          width: 100%;
-          height: 4px;
-          background: #e5e7eb;
-          border-radius: 2px;
-          overflow: hidden;
-        ">
-          <div id="export-progress-bar" style="
-            height: 100%;
-            background: #2563eb;
-            width: 0%;
-            transition: width 0.3s ease;
-          "></div>
-        </div>
-      </div>
-      <div id="export-status" style="font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title=""></div>
-    `;
+        // Create toast structure using DOM APIs for security
+        const headerDiv = document.createElement('div');
+        headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;';
+
+        const title = document.createElement('h3');
+        title.style.cssText = 'margin: 0; font-size: 14px; font-weight: 600; color: #1a1a1a;';
+        title.textContent = 'Exporting Chats';
+
+        const cancelButton = document.createElement('button');
+        cancelButton.id = 'cancel-export';
+        cancelButton.title = 'Cancel export';
+        cancelButton.style.cssText = 'background: none; border: none; color: #6b7280; cursor: pointer; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.2s;';
+        cancelButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+        headerDiv.appendChild(title);
+        headerDiv.appendChild(cancelButton);
+
+        const progressContainer = document.createElement('div');
+        progressContainer.style.cssText = 'margin-bottom: 8px;';
+
+        const progressInfo = document.createElement('div');
+        progressInfo.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;';
+
+        const countSpan = document.createElement('span');
+        countSpan.style.cssText = 'font-size: 12px; color: #6b7280;';
+
+        const currentSpan = document.createElement('span');
+        currentSpan.id = 'export-current';
+        currentSpan.textContent = '0';
+
+        const totalSpan = document.createElement('span');
+        totalSpan.id = 'export-total';
+        totalSpan.textContent = String(total);
+
+        countSpan.appendChild(currentSpan);
+        countSpan.appendChild(document.createTextNode(' / '));
+        countSpan.appendChild(totalSpan);
+
+        const percentageSpan = document.createElement('span');
+        percentageSpan.id = 'export-percentage';
+        percentageSpan.style.cssText = 'font-size: 12px; color: #6b7280;';
+        percentageSpan.textContent = '0%';
+
+        progressInfo.appendChild(countSpan);
+        progressInfo.appendChild(percentageSpan);
+
+        const progressBarContainer = document.createElement('div');
+        progressBarContainer.style.cssText = 'width: 100%; height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden;';
+
+        const progressBar = document.createElement('div');
+        progressBar.id = 'export-progress-bar';
+        progressBar.style.cssText = 'height: 100%; background: #2563eb; width: 0%; transition: width 0.3s ease;';
+
+        progressBarContainer.appendChild(progressBar);
+        progressContainer.appendChild(progressInfo);
+        progressContainer.appendChild(progressBarContainer);
+
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'export-status';
+        statusDiv.style.cssText = 'font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        statusDiv.title = '';
+
+        toast.appendChild(headerDiv);
+        toast.appendChild(progressContainer);
+        toast.appendChild(statusDiv);
 
         document.body.appendChild(toast);
 
@@ -549,14 +565,21 @@
 
             exportButton.type = 'button';
             exportButton.title = `Export ${selectedCount} selected chat${selectedCount > 1 ? 's' : ''}`;
-            exportButton.innerHTML = `
-      <div class="flex items-center justify-center" style="width: 20px; height: 20px;">
+
+            // Create button content using DOM APIs for security
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'flex items-center justify-center';
+            iconContainer.style.cssText = 'width: 20px; height: 20px;';
+
+            // SVG can be set via innerHTML since it's static content (no user input)
+            iconContainer.innerHTML = `
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <path d="M10.5 2.5C10.5 2.22386 10.2761 2 10 2C9.72386 2 9.5 2.22386 9.5 2.5V10.2929L7.35355 8.14645C7.15829 7.95118 6.84171 7.95118 6.64645 8.14645C6.45118 8.34171 6.45118 8.65829 6.64645 8.85355L9.64645 11.8536C9.84171 12.0488 10.1583 12.0488 10.3536 11.8536L13.3536 8.85355C13.5488 8.65829 13.5488 8.34171 13.3536 8.14645C13.1583 7.95118 12.8417 7.95118 12.6464 8.14645L10.5 10.2929V2.5Z"/>
           <path d="M3 12.5C3.27614 12.5 3.5 12.7239 3.5 13V15.5C3.5 16.0523 3.94772 16.5 4.5 16.5H15.5C16.0523 16.5 16.5 16.0523 16.5 15.5V13C16.5 12.7239 16.7239 12.5 17 12.5C17.2761 12.5 17.5 12.7239 17.5 13V15.5C17.5 16.6046 16.6046 17.5 15.5 17.5H4.5C3.39543 17.5 2.5 16.6046 2.5 15.5V13C2.5 12.7239 2.72386 12.5 3 12.5Z"/>
         </svg>
-      </div>
-    `;
+      `;
+
+            exportButton.appendChild(iconContainer);
 
             exportButton.addEventListener('click', handleBulkExport);
 
