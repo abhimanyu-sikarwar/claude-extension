@@ -1,0 +1,25 @@
+{
+  "name": "claude-to-markdown",
+  "version": "0.0.1",
+  "description": "Export Claude.ai chat conversations to Markdown format",
+  "scripts": {
+    "build": "npm run build:chrome && npm run build:firefox",
+    "build:chrome": "node scripts/build.js chrome",
+    "build:firefox": "node scripts/build.js firefox",
+    "clean": "rm -rf dist/",
+    "package": "npm run package:chrome && npm run package:firefox",
+    "package:chrome": "cd dist/chrome && zip -r ../claude-to-markdown-chrome.zip . -x '*.DS_Store'",
+    "package:firefox": "cd dist/firefox && zip -r ../claude-to-markdown-firefox.zip . -x '*.DS_Store'"
+  },
+  "keywords": [
+    "claude",
+    "markdown",
+    "export",
+    "chrome-extension",
+    "firefox-addon"
+  ],
+  "author": "Abhimanyu Sikarwar",
+  "license": "Apache-2.0",
+  "devDependencies": {},
+  "homepage": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown"
+}

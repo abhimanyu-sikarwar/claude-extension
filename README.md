@@ -1,6 +1,6 @@
-# Claude to Markdown - Chrome Extension
+# Claude to Markdown - Browser Extension
 
-A Chrome extension that exports Claude.ai chat conversations to Markdown format with optional GitHub Gist integration.
+A cross-browser extension for Chrome and Firefox that exports Claude.ai chat conversations to Markdown format with optional GitHub Gist integration.
 
 ## Overview
 
@@ -139,17 +139,67 @@ claude-extension/
 
 ## Installation
 
-### From Source
-1. Clone this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode"
-4. Click "Load unpacked"
-5. Select the extension directory
+### Building from Source
 
-### For Firefox
-The extension includes Firefox-specific settings in manifest.json:
-- Gecko ID: `{@id}`
-- Minimum version: 109.0
+#### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+
+#### Build Steps
+1. Clone this repository
+   ```bash
+   git clone <repository-url>
+   cd claude-extension
+   ```
+
+2. Install dependencies (if any)
+   ```bash
+   npm install
+   ```
+
+3. Build for your browser:
+   ```bash
+   # For Chrome
+   npm run build:chrome
+
+   # For Firefox
+   npm run build:firefox
+
+   # For both
+   npm run build
+   ```
+
+4. Package the extension (optional):
+   ```bash
+   # Creates dist/claude-to-markdown-chrome.zip
+   npm run package:chrome
+
+   # Creates dist/claude-to-markdown-firefox.zip
+   npm run package:firefox
+   ```
+
+### Installing in Chrome
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" (top right)
+3. Click "Load unpacked"
+4. Select the `dist/chrome` directory (or the root directory for development)
+
+### Installing in Firefox
+1. Open Firefox and navigate to `about:debugging`
+2. Click "This Firefox" (left sidebar)
+3. Click "Load Temporary Add-on"
+4. Select any file in the `dist/firefox` directory (or manifest.json)
+
+### For Firefox Permanent Installation
+1. Build and package for Firefox: `npm run package:firefox`
+2. Submit to [Firefox Add-ons](https://addons.mozilla.org/developers/) for signing
+3. Install the signed .xpi file
+
+### Browser Compatibility
+- **Chrome**: Version 100+ (Manifest V3)
+- **Firefox**: Version 109+ (Manifest V2 with polyfill)
+- **Edge**: Compatible with Chrome build
+- **Opera**: Compatible with Chrome build
 
 ## Usage
 

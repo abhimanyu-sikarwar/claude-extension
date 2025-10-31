@@ -12,7 +12,36 @@
 
     // Get organization ID from the page
     async function getOrganizationId() {
-        // Method 1: Check if we have it in storage from previous interceptions
+        // Method 1: Check cookies for lastActiveOrg (most reliable)
+        try {
+            // Get all cookies
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'lastActiveOrg' && value) {
+                    const decodedValue = decodeURIComponent(value);
+                    // The cookie might be JSON or just the org ID
+                    try {
+                        const parsed = JSON.parse(decodedValue);
+                        if (parsed.uuid || parsed.id || parsed.organizationId) {
+                            const orgId = parsed.uuid || parsed.id || parsed.organizationId;
+                            console.log('Got org ID from lastActiveOrg cookie (JSON):', orgId);
+                            return orgId;
+                        }
+                    } catch {
+                        // Not JSON, might be direct value
+                        if (decodedValue.match(/^[a-f0-9-]{36}$/)) {
+                            console.log('Got org ID from lastActiveOrg cookie (direct):', decodedValue);
+                            return decodedValue;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Could not get org ID from cookies:', e);
+        }
+
+        // Method 2: Check if we have it in storage from previous interceptions
         try {
             const data = await chrome.storage.local.get('lastIntercepted');
             if (data.lastIntercepted && data.lastIntercepted.url) {
@@ -26,7 +55,32 @@
             console.log('Could not get org ID from storage:', e);
         }
 
-        // Method 2: Try to extract from page HTML/scripts
+        // Method 3: Try to extract from current page's script tags
+        try {
+            const scripts = document.querySelectorAll('script');
+            for (const script of scripts) {
+                const content = script.textContent || script.innerHTML || '';
+                // Look for organization ID in various formats
+                const patterns = [
+                    /["']organizationId["']\s*:\s*["']([a-f0-9-]{36})["']/,
+                    /organizations\/([a-f0-9-]{36})/,
+                    /org[_-]?id["']\s*:\s*["']([a-f0-9-]{36})["']/i,
+                    /["']uuid["']\s*:\s*["']([a-f0-9-]{36})["']/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = content.match(pattern);
+                    if (match && match[1]) {
+                        console.log('Got org ID from script tag:', match[1]);
+                        return match[1];
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Could not get org ID from script tags:', e);
+        }
+
+        // Method 4: Try to extract from page HTML/scripts
         try {
             const pageContent = document.documentElement.innerHTML;
             const match = pageContent.match(/organizations\/([a-f0-9-]{36})/);
@@ -38,47 +92,109 @@
             console.log('Could not get org ID from page content:', e);
         }
 
-        // Method 3: Fetch from chat page
+        // Method 5: Try to extract from meta tags or data attributes
         try {
-            const chatLink = document.querySelector('a[href*="/chat/"]');
-            if (chatLink) {
-                const chatUrl = chatLink.href;
-                console.log('Fetching org ID from chat page:', chatUrl);
+            // Check meta tags
+            const metaTags = document.querySelectorAll('meta[name*="org"], meta[property*="org"]');
+            for (const meta of metaTags) {
+                const content = meta.getAttribute('content') || '';
+                const match = content.match(/([a-f0-9-]{36})/);
+                if (match) {
+                    console.log('Got org ID from meta tag:', match[1]);
+                    return match[1];
+                }
+            }
 
-                const response = await fetch(chatUrl, {
-                    credentials: 'include',
-                    headers: {
-                        'Accept': 'text/html'
-                    }
-                });
-
-                if (response.ok) {
-                    const html = await response.text();
-                    const match = html.match(/organizations\/([a-f0-9-]{36})/);
-                    if (match) {
-                        console.log('Got org ID from fetched page:', match[1]);
-                        return match[1];
-                    }
+            // Check data attributes
+            const elementsWithData = document.querySelectorAll('[data-org-id], [data-organization-id], [data-org]');
+            for (const elem of elementsWithData) {
+                const orgId = elem.getAttribute('data-org-id') ||
+                             elem.getAttribute('data-organization-id') ||
+                             elem.getAttribute('data-org');
+                if (orgId && orgId.match(/^[a-f0-9-]{36}$/)) {
+                    console.log('Got org ID from data attribute:', orgId);
+                    return orgId;
                 }
             }
         } catch (e) {
-            console.log('Could not fetch org ID from chat page:', e);
+            console.log('Could not get org ID from meta/data attributes:', e);
         }
 
-        // Method 4: Try to get from window object
+        // Method 6: Use a fallback/default org ID if available
+        // Try to extract from any visible chat link without fetching
         try {
-            if (window.__NEXT_DATA__ && window.__NEXT_DATA__.props) {
-                const propsString = JSON.stringify(window.__NEXT_DATA__.props);
-                const match = propsString.match(/([a-f0-9-]{8}-[a-f0-9-]{4}-[a-f0-9-]{4}-[a-f0-9-]{4}-[a-f0-9-]{12})/);
+            const chatLinks = document.querySelectorAll('a[href*="/chat/"]');
+            for (const link of chatLinks) {
+                // Try to extract from onclick or other attributes
+                const onclick = link.getAttribute('onclick') || '';
+                const dataHref = link.getAttribute('data-href') || '';
+                const combinedText = onclick + dataHref + link.outerHTML;
+
+                const match = combinedText.match(/organizations\/([a-f0-9-]{36})/);
                 if (match) {
-                    console.log('Got potential org ID from Next.js data:', match[1]);
+                    console.log('Got org ID from link attributes:', match[1]);
                     return match[1];
                 }
+            }
+        } catch (e) {
+            console.log('Could not get org ID from link attributes:', e);
+        }
+
+        // Method 7: Try window object with more patterns
+        try {
+            // Check various window properties
+            const windowProps = [
+                'window.__NEXT_DATA__',
+                'window.__INITIAL_STATE__',
+                'window.__PRELOADED_STATE__',
+                'window.__APP_CONFIG__',
+                'window.claude_config'
+            ];
+
+            for (const prop of windowProps) {
+                try {
+                    const obj = eval(prop);
+                    if (obj) {
+                        const jsonString = JSON.stringify(obj);
+                        const match = jsonString.match(/([a-f0-9-]{36})/);
+                        if (match) {
+                            console.log(`Got org ID from ${prop}:`, match[1]);
+                            return match[1];
+                        }
+                    }
+                } catch {}
             }
         } catch (e) {
             console.log('Could not get org ID from window object:', e);
         }
 
+        // Method 8: As last resort, try to make a synchronous XHR request (Firefox compatible)
+        try {
+            const chatLink = document.querySelector('a[href*="/chat/"]');
+            if (chatLink && typeof XMLHttpRequest !== 'undefined') {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', chatLink.href, false); // Synchronous request
+                xhr.setRequestHeader('Accept', 'text/html');
+                xhr.withCredentials = true;
+
+                try {
+                    xhr.send();
+                    if (xhr.status === 200) {
+                        const match = xhr.responseText.match(/organizations\/([a-f0-9-]{36})/);
+                        if (match) {
+                            console.log('Got org ID from XHR request:', match[1]);
+                            return match[1];
+                        }
+                    }
+                } catch (xhrError) {
+                    console.log('XHR request failed:', xhrError);
+                }
+            }
+        } catch (e) {
+            console.log('Could not get org ID via XHR:', e);
+        }
+
+        console.error('Failed to determine organization ID after trying all methods');
         return null;
     }
 
@@ -262,11 +378,38 @@
 
         // Get organization ID
         updateProgress(0, selectedChats.length, 'Getting organization info...');
-        const orgId = await getOrganizationId();
+        let orgId = await getOrganizationId();
 
         if (!orgId) {
-            alert('Could not determine organization ID. Please try again.');
-            return;
+            // Try to get from storage as fallback
+            const storedOrgId = await chrome.storage.local.get('organizationId');
+            orgId = storedOrgId.organizationId;
+
+            if (!orgId) {
+                // Ask user to provide it manually
+                const userInput = prompt(
+                    'Could not automatically detect organization ID.\n\n' +
+                    'Please enter your organization ID manually.\n' +
+                    'You can find it in the URL when viewing any Claude chat:\n' +
+                    'claude.ai/api/organizations/[YOUR-ORG-ID]/chat_conversations/...\n\n' +
+                    'Organization ID (36 characters):'
+                );
+
+                if (userInput && userInput.match(/^[a-f0-9-]{36}$/)) {
+                    orgId = userInput;
+                    // Save it for future use
+                    await chrome.storage.local.set({ organizationId: orgId });
+                    console.log('User provided org ID:', orgId);
+                } else {
+                    alert('Invalid or missing organization ID. Export cancelled.');
+                    return;
+                }
+            }
+        }
+
+        // Also save the detected org ID for future use
+        if (orgId) {
+            await chrome.storage.local.set({ organizationId: orgId });
         }
 
         console.log('Organization ID:', orgId);

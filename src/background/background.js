@@ -5,9 +5,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Background received message:', message.type);
 
     if (message.type === 'CLAUDE_CONVERSATION') {
-        chrome.storage.local.set({
+        // Also store organization ID if present
+        const storageData = {
             lastIntercepted: message.data
-        }).then(() => {
+        };
+
+        if (message.data && message.data.organizationId) {
+            storageData.organizationId = message.data.organizationId;
+            console.log('Storing organization ID:', message.data.organizationId);
+        }
+
+        chrome.storage.local.set(storageData).then(() => {
             console.log('Stored Claude conversation');
             sendResponse({ success: true });
         }).catch(e => {

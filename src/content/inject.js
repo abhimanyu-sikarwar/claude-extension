@@ -17,13 +17,18 @@
       try {
         const jsonData = await clonedResponse.json();
         
+        // Extract organization ID from URL
+        const orgMatch = url.match(/organizations\/([a-f0-9-]{36})/);
+        const orgId = orgMatch ? orgMatch[1] : null;
+
         // Post message to content script
         window.postMessage({
           type: 'CLAUDE_CONVERSATION_INTERCEPTED',
           data: {
             timestamp: new Date().toISOString(),
             url: url,
-            content: jsonData
+            content: jsonData,
+            organizationId: orgId
           }
         }, '*');
       } catch (e) {

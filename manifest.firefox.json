@@ -1,0 +1,68 @@
+{
+    "manifest_version": 2,
+    "name": "Claude to Markdown",
+    "version": "0.0.1",
+    "description": "Exports Claude chat conversations as Markdown",
+    "homepage_url": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{518f7e4f-a2c6-4587-af34-e06f3dbbf523}",
+            "strict_min_version": "109.0"
+        }
+    },
+    "permissions": [
+        "alarms",
+        "storage",
+        "tabs",
+        "*://*.claude.ai/*"
+    ],
+    "options_ui": {
+        "page": "pages/options.html",
+        "open_in_tab": false
+    },
+    "background": {
+        "scripts": ["lib/browser-polyfill.min.js", "src/background/background-wrapper.js"],
+        "persistent": false
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://claude.ai/*"
+            ],
+            "js": [
+                "lib/browser-polyfill.min.js",
+                "src/shared/markdown-builder.js",
+                "src/content/content.js",
+                "src/content/download-button.js",
+                "src/content/bulk-export.js"
+            ],
+            "run_at": "document_end",
+            "all_frames": false
+        },
+        {
+            "matches": [
+                "*://claude.ai/*"
+            ],
+            "js": [
+                "src/content/inject.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": false
+        }
+    ],
+    "browser_action": {
+        "default_popup": "pages/popup.html",
+        "default_icon": "icons/icon.svg",
+        "theme_icons": [
+            {
+                "light": "icons/icon.svg",
+                "dark": "icons/icon.svg",
+                "size": 32
+            }
+        ]
+    },
+    "web_accessible_resources": [
+        "src/shared/markdown-builder.js"
+    ],
+    "content_security_policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com https://claude.ai; font-src 'self'; object-src 'none'; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+}

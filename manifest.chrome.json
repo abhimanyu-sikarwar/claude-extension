@@ -1,0 +1,72 @@
+{
+    "manifest_version": 3,
+    "name": "Claude to Markdown",
+    "version": "0.0.1",
+    "description": "Exports Claude chat conversations as Markdown",
+    "homepage_url": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown",
+    "permissions": [
+        "alarms",
+        "storage",
+        "tabs"
+    ],
+    "host_permissions": [
+        "*://*.claude.ai/*"
+    ],
+    "options_ui": {
+        "page": "pages/options.html",
+        "open_in_tab": false
+    },
+    "content_security_policy": {
+        "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com https://claude.ai; font-src 'self'; object-src 'none'; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+    },
+    "background": {
+        "service_worker": "src/background/background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://claude.ai/*"
+            ],
+            "js": [
+                "src/shared/markdown-builder.js",
+                "src/content/content.js",
+                "src/content/download-button.js",
+                "src/content/bulk-export.js"
+            ],
+            "run_at": "document_end",
+            "all_frames": false
+        },
+        {
+            "matches": [
+                "*://claude.ai/*"
+            ],
+            "js": [
+                "src/content/inject.js"
+            ],
+            "run_at": "document_start",
+            "world": "MAIN",
+            "all_frames": false
+        }
+    ],
+    "action": {
+        "default_popup": "pages/popup.html",
+        "default_icon": "icons/icon.svg",
+        "theme_icons": [
+            {
+                "light": "icons/icon.svg",
+                "dark": "icons/icon.svg",
+                "size": 32
+            }
+        ]
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "src/shared/markdown-builder.js"
+            ],
+            "matches": [
+                "*://claude.ai/*"
+            ]
+        }
+    ]
+}
