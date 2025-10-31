@@ -6,8 +6,11 @@
     "homepage_url": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown",
     "browser_specific_settings": {
         "gecko": {
-            "id": "{518f7e4f-a2c6-4587-af34-e06f3dbbf523}",
-            "strict_min_version": "109.0"
+            "id": "{8db715b1-5996-44f9-a328-df0cec45cecf}",
+            "strict_min_version": "109.0",
+            "data_collection_permissions": {
+                "collection_enabled": false
+            }
         }
     },
     "permissions": [
