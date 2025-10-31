@@ -117,7 +117,7 @@ This extension complies with:
 
 ## Developer Information
 - **Developer:** Abhimanyu Sikrwar
-- **Extension ID:** [Will be provided after publishing]
+- **Extension ID:** hpmejedgaglmmbogjgmbphhdopeaglfe
 - **Repository:** https://github.com/abhimanyu-sikarwar/claude-extension
 
 ## No Sale of Data
