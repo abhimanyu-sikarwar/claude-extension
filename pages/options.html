@@ -6,15 +6,46 @@
 </head>
 <body>
   <div class="container">
+    <h2>Export Preferences</h2>
+
+    <div class="field">
+      <label>Message Type</label>
+      <div class="radio-group">
+        <label class="radio-label">
+          <input type="radio" name="messageType" value="all" id="msg-all" checked>
+          <span>All Messages</span>
+          <span class="note">Export both user and assistant messages</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="messageType" value="assistant" id="msg-assistant">
+          <span>Assistant Only</span>
+          <span class="note">Export only Claude's responses</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="checkbox-label">
+        <input type="checkbox" id="include-thinking" checked>
+        <span>Include Thinking Blocks</span>
+        <span class="note">Include Claude's thinking process in exports</span>
+      </label>
+    </div>
+
+    <hr class="divider">
+
+    <h2>GitHub Integration</h2>
+
     <div class="field">
       <label for="github-token">GitHub Personal Access Token (optional)</label>
-      <input type="text" id="github-token">
+      <input type="text" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
       <p class="note">
-        Create a new fine-grained token with just the 'gist' scope at:
-        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub Settings → Developer Settings → Personal access tokens</a>
+        Create a New personal access token (classic) token with just the 'gist' scope at:
+        <a href="https://github.com/settings/tokens/new" target="_blank">GitHub Settings → Developer Settings → personal access token (classic)</a>
       </p>
     </div>
-    <button id="save">Save</button>
+
+    <button id="save">Save Settings</button>
     <div id="status" class="hide"></div>
   </div>
   <script src="../src/options/options.js"></script>
