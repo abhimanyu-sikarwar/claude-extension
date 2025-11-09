@@ -5,12 +5,13 @@ A cross-browser extension for Chrome and Firefox that exports Claude.ai chat con
 ## Overview
 
 This extension intercepts and captures Claude.ai conversation data, allowing you to:
-- Export conversations as Markdown files
+- Export conversations in multiple formats: Markdown, Styled HTML, or PDF
 - Bulk export multiple conversations from chat history
 - Create/update GitHub Gists for easy sharing
 - Filter exports by message type (all messages or assistant-only)
 - Include or exclude thinking blocks in exports
 - Add a download button directly to the Claude.ai interface
+- Generate professionally styled exports with syntax highlighting and custom CSS
 
 ## Features
 
@@ -19,9 +20,11 @@ This extension intercepts and captures Claude.ai conversation data, allowing you
 - Stores conversation data locally in Chrome storage
 - Updates in real-time as conversations progress
 
-### 2. Markdown Export Options
-- **All Messages**: Exports both user and assistant messages
-- **Assistant Only**: Exports only Claude's responses
+### 2. Export Format Options
+- **Markdown (.md)**: Plain markdown format
+- **Styled HTML (.html)**: Enhanced HTML with syntax highlighting (Prism.js), custom CSS, and professional styling
+- **PDF Export**: Print-ready HTML that opens in a new window for easy PDF generation via browser's print function
+- **Message Filtering**: Choose between all messages or assistant-only
 - **Include Thinking**: Option to include/exclude Claude's thinking blocks
 
 ### 3. GitHub Gist Integration
@@ -30,9 +33,10 @@ This extension intercepts and captures Claude.ai conversation data, allowing you
 - Automatic expiry management for stored Gist IDs (30-day retention)
 
 ### 4. In-Page Download Button
-- Adds a "Download MD" button directly to Claude.ai interface
-- Dropdown menu with export options
+- Adds a "Download" button directly to Claude.ai interface
+- Dropdown menu with multiple export format options (Markdown, Styled HTML, PDF)
 - Remembers your export preferences
+- One-click export with customizable settings
 
 ### 5. Bulk Export from Chat History
 - Export multiple conversations at once from the chat history page
@@ -58,7 +62,9 @@ claude-extension/
 │   ├── options/           # Options page
 │   │   └── options.js     # Settings management
 │   └── shared/            # Shared utilities
-│       └── markdown-builder.js  # Markdown generation
+│       ├── markdown-builder.js  # Markdown generation
+│       ├── pdf-generator.js     # PDF export with custom CSS
+│       └── styled-html-generator.js  # Styled HTML generation with Prism.js
 ├── pages/                  # HTML pages
 │   ├── popup.html         # Extension popup interface
 │   └── options.html       # Settings page
@@ -137,6 +143,19 @@ claude-extension/
 - Used by popup, download-button, and bulk-export components
 - Handles Claude artifacts, tool use, and message formatting
 
+#### src/shared/pdf-generator.js
+- Converts markdown to print-ready HTML for PDF generation
+- Supports custom CSS styling via `download_as_pdf.css`
+- Opens formatted content in new window for browser-based PDF printing
+- Includes fallback to HTML download if popup is blocked
+
+#### src/shared/styled-html-generator.js
+- Enhanced HTML generation with professional styling
+- Integrates Prism.js for syntax highlighting in code blocks
+- Supports multiple programming languages (Python, JavaScript, SQL, Go, Bash, etc.)
+- Optimized print styles for clean PDF output
+- Custom CSS with proper table formatting, typography, and spacing
+
 ## Installation
 
 ### Building from Source
@@ -210,10 +229,14 @@ claude-extension/
 4. Use "Refresh Page" to capture latest data
 
 ### In-Page Download
-1. Look for "Download MD" button in Claude.ai interface (next to Share button)
-2. Click to open export options
-3. Select message type and thinking inclusion preferences
-4. Click "Download MD" to save file
+1. Look for "Download" button in Claude.ai interface (next to Share button)
+2. Click to open export options menu
+3. Select your preferred export format:
+   - **Download MD**: Plain markdown file
+   - **Download HTML**: Styled HTML with syntax highlighting
+   - **Download PDF**: Opens print-ready HTML in new window (use Ctrl+P/Cmd+P to save as PDF)
+4. Configure message filtering and thinking block preferences
+5. Your preferences are saved automatically for future exports
 
 ### GitHub Gist Integration
 1. Click the settings icon in the extension popup
@@ -260,12 +283,14 @@ Chrome Storage
 popup.js / download-button.js
 ```
 
-### Markdown Generation Features
-- Converts Claude artifacts to code blocks
-- Handles tool use (repl, artifacts)
-- Preserves attachments with collapsible details
+### Export Generation Features
+- **Markdown**: Converts Claude artifacts to code blocks, handles tool use, preserves attachments
+- **Styled HTML**: Professional styling with Prism.js syntax highlighting, responsive tables, optimized typography
+- **PDF Export**: Print-optimized HTML with custom CSS, removes browser headers/footers, maintains formatting
 - Formats timestamps in readable format
 - Supports artifact updates with before/after display
+- Code blocks with language-specific syntax highlighting
+- Responsive table formatting with proper borders and spacing
 
 ### Security Considerations
 - Content Security Policy defined for extension pages
