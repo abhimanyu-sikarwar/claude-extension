@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Claude to Markdown",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Exports Claude chat conversations as Markdown",
     "homepage_url": "https://abhimanyusikarwar.com/posts/export_claude_chat_to_markdown",
     "permissions": [
@@ -29,6 +29,8 @@
             ],
             "js": [
                 "src/shared/markdown-builder.js",
+                "src/shared/pdf-generator.js",
+                "src/shared/styled-html-generator.js",
                 "src/content/content.js",
                 "src/content/download-button.js",
                 "src/content/bulk-export.js"
@@ -66,7 +68,8 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "src/shared/markdown-builder.js"
+                "src/shared/markdown-builder.js",
+                "styles/download_as_pdf.css"
             ],
             "matches": [
                 "*://claude.ai/*"

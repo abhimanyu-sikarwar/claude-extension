@@ -86,6 +86,10 @@
       <button class="download-button w-full py-1.5 px-2 rounded-md cursor-pointer whitespace-nowrap overflow-hidden text-center hover:bg-accent-main hover:text-text-000 text-sm font-medium bg-bg-200 text-text-100 transition-colors">
         Download MD
       </button>
+
+      <button class="download-pdf-button w-full py-1.5 px-2 rounded-md cursor-pointer whitespace-nowrap overflow-hidden text-center hover:bg-accent-main hover:text-text-000 text-sm font-medium bg-bg-200 text-text-100 transition-colors mt-1.5">
+        Download PDF
+      </button>
     `;
 
         wrapper.appendChild(popover);
@@ -159,12 +163,20 @@
                 });
             });
 
-            // Handle download
+            // Handle markdown download
             const downloadBtn = popover.querySelector('.download-button');
             downloadBtn.addEventListener('click', async () => {
                 wrapper.remove();
                 popoverOpen = false;
                 await handleDownload(selectedOption, includeThinking);
+            });
+
+            // Handle PDF download with custom CSS
+            const downloadPdfBtn = popover.querySelector('.download-pdf-button');
+            downloadPdfBtn.addEventListener('click', async () => {
+                wrapper.remove();
+                popoverOpen = false;
+                await handlePdfDownload(selectedOption, includeThinking);
             });
         });
 
@@ -199,6 +211,74 @@
             alert('Failed to download markdown. Please try again.');
         }
     }
+
+    async function handlePdfDownload(messageType = 'all', includeThinking = true) {
+        try {
+            const data = await chrome.storage.local.get('lastIntercepted');
+
+            if (!data.lastIntercepted) {
+                alert('No conversation loaded. Please reload the page to capture the conversation.');
+                return;
+            }
+
+            const markdown = buildMarkdown(data.lastIntercepted.content, messageType, includeThinking);
+            const suffix = messageType === 'assistant' ? '_assistant_only' : '';
+            const filename = `${data.lastIntercepted.content.name || 'claude_chat'}${suffix}`;
+
+            // Use styled HTML generator if available, otherwise fall back to basic PDF generator
+            if (window.ClaudeStyledHTMLGenerator && window.ClaudeStyledHTMLGenerator.generateStyledHTML) {
+                // Generate styled HTML
+                const styledHtml = window.ClaudeStyledHTMLGenerator.generateStyledHTML(markdown, filename);
+
+                // Create blob and open for printing to PDF
+                const blob = new Blob([styledHtml], { type: 'text/html;charset=utf-8' });
+                const blobUrl = URL.createObjectURL(blob);
+
+                // Open in new window for print to PDF
+                const printWindow = window.open(blobUrl, '_blank');
+
+                if (printWindow) {
+                    // Give time for content to load, then trigger print
+                    setTimeout(() => {
+                        try {
+                            printWindow.print();
+                        } catch (e) {
+                            console.log('Print dialog may need to be triggered manually');
+                        }
+                    }, 1500);
+
+                    // Clean up blob URL after delay
+                    setTimeout(() => {
+                        URL.revokeObjectURL(blobUrl);
+                    }, 10000);
+                } else {
+                    // If popup blocked, download as HTML with instructions
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = filename + '.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    setTimeout(() => {
+                        URL.revokeObjectURL(blobUrl);
+                    }, 1000);
+
+                    alert('Popup blocked. HTML file downloaded. Please open it and use Ctrl+P (or Cmd+P) to print to PDF.');
+                }
+            } else if (window.ClaudePdfGenerator && window.ClaudePdfGenerator.generatePdf) {
+                // Fallback to old PDF generator
+                await window.ClaudePdfGenerator.generatePdf(markdown, filename, true);
+            } else {
+                console.error('PDF generator not loaded');
+                alert('PDF generator is not available. Please refresh the page and try again.');
+            }
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
+    }
+
 
     function addDownloadButton() {
         const chatActions = document.querySelector('[data-testid="chat-actions"]');

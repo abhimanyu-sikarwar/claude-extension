@@ -239,6 +239,86 @@
         URL.revokeObjectURL(url);
     }
 
+    // Show export format popover
+    function showExportFormatPopover(buttonElement) {
+        // Remove existing popover if any
+        const existingPopover = document.getElementById('bulk-export-format-popover');
+        if (existingPopover) {
+            existingPopover.remove();
+            return;
+        }
+
+        // Get button position
+        const rect = buttonElement.getBoundingClientRect();
+
+        // Create popover wrapper
+        const wrapper = document.createElement('div');
+        wrapper.id = 'bulk-export-format-popover';
+        wrapper.setAttribute('data-radix-popper-content-wrapper', '');
+        wrapper.setAttribute('dir', 'ltr');
+        wrapper.style.cssText = `
+          position: fixed;
+          left: 0px;
+          top: 0px;
+          transform: translate(${rect.left}px, ${rect.bottom + 4}px);
+          min-width: max-content;
+          z-index: 50;
+          will-change: transform;
+        `;
+
+        // Create popover content
+        const popover = document.createElement('div');
+        popover.setAttribute('data-side', 'bottom');
+        popover.setAttribute('data-align', 'start');
+        popover.setAttribute('role', 'menu');
+        popover.setAttribute('data-state', 'open');
+        popover.className = 'z-dropdown bg-bg-000 border-0.5 border-border-300 backdrop-blur-xl rounded-xl min-w-[14rem] overflow-hidden p-1.5 text-text-300 shadow-diffused shadow-[hsl(var(--always-black)/4%)] overflow-y-auto';
+        popover.style.cssText = 'outline: none; pointer-events: auto;';
+
+        popover.innerHTML = `
+          <div class="px-2 py-1.5 text-xs font-medium text-text-200 uppercase tracking-wide">Export Format</div>
+
+          <button class="export-format-option w-full py-1.5 px-2 rounded-md cursor-pointer whitespace-nowrap overflow-hidden flex items-center gap-2 hover:bg-bg-200 hover:text-text-000 text-sm transition-colors" data-format="markdown">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 2h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm1 9v2h2V7L4 7v4zm4 2v-2l2-2 2 2v2h1V7h-1l-2.5 2.5L7 7H6v6h2z"/>
+            </svg>
+            <span>Markdown (.md)</span>
+          </button>
+
+          <button class="export-format-option w-full py-1.5 px-2 rounded-md cursor-pointer whitespace-nowrap overflow-hidden flex items-center gap-2 hover:bg-bg-200 hover:text-text-000 text-sm transition-colors" data-format="pdf">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 2a2 2 0 0 1 2-2h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm7.5 1.5v-2l3 3h-2a1 1 0 0 1-1-1z"/>
+              <path d="M5.5 9a.5.5 0 0 0 0 1h1a1.5 1.5 0 0 0 0-3h-1a.5.5 0 0 0 0 1h1a.5.5 0 0 1 0 1h-1zm2 1.5v1a.5.5 0 0 0 1 0v-1h.5a1.5 1.5 0 0 0 0-3H8v3h.5zm1-1.5h.5a.5.5 0 0 1 0 1H8.5V9z"/>
+            </svg>
+            <span>PDF (Custom Style)</span>
+          </button>
+        `;
+
+        wrapper.appendChild(popover);
+        document.body.appendChild(wrapper);
+
+        // Handle format selection
+        const formatOptions = popover.querySelectorAll('.export-format-option');
+        formatOptions.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const format = btn.getAttribute('data-format');
+                wrapper.remove();
+                await handleBulkExport(format);
+            });
+        });
+
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', function closePopover(e) {
+                if (!wrapper.contains(e.target) && e.target !== buttonElement) {
+                    wrapper.remove();
+                    document.removeEventListener('click', closePopover);
+                }
+            });
+        }, 0);
+    }
+
     // Show progress toast
     function showProgressToast(total) {
         const toast = document.createElement('div');
@@ -365,7 +445,7 @@
     }
 
     // Handle bulk export by fetching API directly
-    async function handleBulkExport() {
+    async function handleBulkExport(format = 'markdown') {
         // Get all selected checkboxes
         const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
         const selectedChats = [];
@@ -466,9 +546,39 @@
                     updateProgress(i, selectedChats.length, `Exporting: ${chat.title}`);
                     const markdown = buildMarkdown(chatData, messageType, includeThinking);
 
-                    // Download file
-                    const filename = `${chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
-                    downloadMarkdown(markdown, filename);
+                    // Download file based on format
+                    const baseFilename = chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+                    if (format === 'pdf') {
+                        // Use styled HTML generator for PDF
+                        if (window.ClaudeStyledHTMLGenerator && window.ClaudeStyledHTMLGenerator.generateStyledHTML) {
+                            const styledHtml = window.ClaudeStyledHTMLGenerator.generateStyledHTML(markdown, baseFilename);
+
+                            // Create blob and download as HTML for user to print
+                            const blob = new Blob([styledHtml], { type: 'text/html;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${baseFilename}.html`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+
+                            setTimeout(() => {
+                                URL.revokeObjectURL(url);
+                            }, 1000);
+                        } else if (window.ClaudePdfGenerator && window.ClaudePdfGenerator.generatePdf) {
+                            // Fallback to old PDF generator
+                            await window.ClaudePdfGenerator.generatePdf(markdown, baseFilename, true);
+                        } else {
+                            console.error('[Bulk Export] PDF generator not available');
+                            const filename = `${baseFilename}.md`;
+                            downloadMarkdown(markdown, filename);
+                        }
+                    } else {
+                        const filename = `${baseFilename}.md`;
+                        downloadMarkdown(markdown, filename);
+                    }
 
                     updateProgress(i + 1, selectedChats.length, `Completed: ${chat.title}`);
                     console.log('Export completed for:', chat.title);
@@ -514,14 +624,60 @@
 
     // Add export button to the toolbar
     function addExportButton() {
-        // Check if we're on the chat history page
-        const historyHeader = document.querySelector('h1.font-heading');
-        if (!historyHeader || !historyHeader.textContent.includes('chat history')) {
+        // Check if we're on the chat history page - look for multiple indicators
+        const isHistoryPage =
+            window.location.pathname.includes('/recents') ||
+            window.location.pathname === '/' ||
+            document.querySelector('h1.font-heading')?.textContent?.toLowerCase().includes('chat') ||
+            document.querySelector('[data-testid="chat-list"]') ||
+            document.querySelector('ul[role="list"]')?.querySelector('input[type="checkbox"]');
+
+        console.log('[Bulk Export] History page check:', isHistoryPage);
+        console.log('[Bulk Export] Path check:', window.location.pathname);
+
+        if (!isHistoryPage) {
+            console.log('[Bulk Export] Not on history page, skipping...');
             return;
         }
 
-        // Find the toolbar with delete buttons
-        const toolbar = document.querySelector('.flex.items-center.z-header');
+        // Find the toolbar with delete buttons - try multiple selectors
+        let toolbar = document.querySelector('.flex.items-center.z-header');
+        if (!toolbar) {
+            // Try alternative selectors for the toolbar
+            toolbar = document.querySelector('[role="toolbar"]');
+            if (!toolbar) {
+                // Look for a container with delete button
+                const deleteBtn = Array.from(document.querySelectorAll('button')).find(btn =>
+                    btn.textContent?.toLowerCase().includes('delete') ||
+                    btn.title?.toLowerCase().includes('delete')
+                );
+                if (deleteBtn) {
+                    toolbar = deleteBtn.parentElement?.parentElement;
+                }
+            }
+        }
+
+        if (!toolbar) {
+            // If still no toolbar, look for any selected checkboxes and create our own toolbar
+            const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            if (selectedCheckboxes.length > 0) {
+                // Find a good place to insert our button
+                const header = document.querySelector('header') || document.querySelector('[role="banner"]');
+                if (header) {
+                    // Create a simple toolbar container
+                    let customToolbar = document.getElementById('custom-export-toolbar');
+                    if (!customToolbar) {
+                        customToolbar = document.createElement('div');
+                        customToolbar.id = 'custom-export-toolbar';
+                        customToolbar.className = 'flex items-center gap-2 px-4 py-2';
+                        customToolbar.style.cssText = 'background: var(--bg-100, #fff); border-bottom: 1px solid var(--border-200, #e5e7eb);';
+                        header.appendChild(customToolbar);
+                    }
+                    toolbar = customToolbar;
+                }
+            }
+        }
+
         if (!toolbar) {
             return;
         }
@@ -581,14 +737,29 @@
 
             exportButton.appendChild(iconContainer);
 
-            exportButton.addEventListener('click', handleBulkExport);
+            exportButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showExportFormatPopover(exportButton);
+            });
 
-            // Insert after the delete buttons
-            const buttonContainer = toolbar.querySelector('.mr-auto.flex.gap-1');
-            if (buttonContainer) {
+            // Insert after the delete buttons - try multiple insertion points
+            let buttonContainer = toolbar.querySelector('.mr-auto.flex.gap-1');
+
+            if (!buttonContainer) {
+                // Try to find any flex container in the toolbar
+                buttonContainer = toolbar.querySelector('.flex');
+            }
+
+            if (!buttonContainer) {
+                // If no container found, append directly to toolbar
+                buttonContainer = toolbar;
+            }
+
+            // Check if the button is already added
+            if (!document.getElementById('bulk-export-button')) {
                 buttonContainer.appendChild(exportButton);
                 exportButtonAdded = true;
-                console.log('Bulk export button added successfully');
+                console.log('[Bulk Export] Button added successfully to:', buttonContainer.className || 'toolbar');
             }
         } else if (existingButton && selectedCount > 0) {
             // Update tooltip if button exists and selection changed
@@ -598,6 +769,10 @@
 
     // Initialize
     function init() {
+        console.log('[Bulk Export] Initializing...');
+        console.log('[Bulk Export] Current URL:', window.location.href);
+
+        // Initial attempt to add button
         addExportButton();
 
         // Monitor for checkbox changes and DOM updates
@@ -616,12 +791,19 @@
         // Also listen for change events on checkboxes
         document.addEventListener('change', (e) => {
             if (e.target && e.target.type === 'checkbox') {
+                console.log('[Bulk Export] Checkbox changed, updating button...');
                 // Small delay to let the DOM update
                 setTimeout(() => {
                     addExportButton();
                 }, 10);
             }
         });
+
+        // Also try to add button after a delay in case the page loads slowly
+        setTimeout(() => {
+            console.log('[Bulk Export] Delayed button check...');
+            addExportButton();
+        }, 2000);
     }
 
     // Start when DOM is ready
