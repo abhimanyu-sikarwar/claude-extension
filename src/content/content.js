@@ -17,26 +17,7 @@ window.addEventListener('message', function (event) {
     }
 });
 
-// Inject the script after setting up listener
-function injectScript() {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('inject.js');
-    script.onload = function () {
-        this.remove();
-    };
-    (document.head || document.documentElement).appendChild(script);
-}
-
-// Inject as early as possible
-if (document.documentElement) {
-    injectScript();
-} else {
-    // Wait for document to be ready
-    const observer = new MutationObserver(() => {
-        if (document.documentElement) {
-            injectScript();
-            observer.disconnect();
-        }
-    });
-    observer.observe(document, { childList: true });
-}
+// The page-context fetch interceptor (src/content/inject.js) is injected
+// declaratively via the manifest's "world": "MAIN" content_scripts entry at
+// document_start. No manual injection is needed here — we only forward the
+// messages it posts back (handled by the listener above).

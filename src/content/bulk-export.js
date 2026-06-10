@@ -10,6 +10,50 @@
         return match ? match[1] : null;
     }
 
+    // Determine whether a chat row is selected. Handles the current table UI
+    // (<tr> rows with a Base UI checkbox button) and the old list UI (<li> with
+    // a native checkbox).
+    function isRowSelected(row) {
+        if (!row) return false;
+        // Old/native UI: a real checked <input type="checkbox"> inside the row
+        const nativeCheckbox = row.querySelector('input[type="checkbox"]');
+        if (nativeCheckbox && nativeCheckbox.checked) return true;
+        // New table UI: selected rows are marked with data-selected="true"
+        if (row.getAttribute && row.getAttribute('data-selected') === 'true') return true;
+        // New table UI: Base UI checkbox button reflects state via aria-checked / data-checked
+        const cdsCheckbox = row.querySelector('[role="checkbox"]');
+        if (cdsCheckbox) {
+            if (cdsCheckbox.getAttribute('aria-checked') === 'true') return true;
+            if (cdsCheckbox.hasAttribute('data-checked')) return true;
+        }
+        return false;
+    }
+
+    // Collect all currently selected chats from the chat-list DOM.
+    function getSelectedChats() {
+        const selectedChats = [];
+        const seen = new Set();
+
+        document.querySelectorAll('a[href*="/chat/"]').forEach(link => {
+            const uuid = getChatUuidFromUrl(link.href);
+            if (!uuid || seen.has(uuid)) return;
+
+            const row = link.closest('tr, li');
+            if (!isRowSelected(row)) return;
+
+            const title =
+                link.getAttribute('aria-label')?.trim() ||
+                link.querySelector('.truncate')?.textContent?.trim() ||
+                (row && row.querySelector('.truncate')?.textContent?.trim()) ||
+                'Untitled';
+
+            seen.add(uuid);
+            selectedChats.push({ uuid, title });
+        });
+
+        return selectedChats;
+    }
+
     // Get organization ID from the page
     async function getOrganizationId() {
         // Method 1: Check cookies for lastActiveOrg (most reliable)
@@ -446,24 +490,8 @@
 
     // Handle bulk export by fetching API directly
     async function handleBulkExport(format = 'markdown') {
-        // Get all selected checkboxes
-        const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedChats = [];
-
-        // Extract chat UUIDs from selected items
-        selectedCheckboxes.forEach(checkbox => {
-            const listItem = checkbox.closest('li');
-            if (listItem) {
-                const link = listItem.querySelector('a[href*="/chat/"]');
-                if (link) {
-                    const uuid = getChatUuidFromUrl(link.href);
-                    const title = listItem.querySelector('.truncate')?.textContent || 'Untitled';
-                    if (uuid) {
-                        selectedChats.push({ uuid, title });
-                    }
-                }
-            }
-        });
+        // Get all selected chats from the chat-list DOM
+        const selectedChats = getSelectedChats();
 
         if (selectedChats.length === 0) {
             alert('No chats selected. Please select at least one chat to export.');
@@ -658,9 +686,8 @@
         }
 
         if (!toolbar) {
-            // If still no toolbar, look for any selected checkboxes and create our own toolbar
-            const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-            if (selectedCheckboxes.length > 0) {
+            // If still no toolbar, look for selected chats and create our own toolbar
+            if (getSelectedChats().length > 0) {
                 // Find a good place to insert our button
                 const header = document.querySelector('header') || document.querySelector('[role="banner"]');
                 if (header) {
@@ -683,8 +710,7 @@
         }
 
         // Check for selected items
-        const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedCount = selectedCheckboxes.length;
+        const selectedCount = getSelectedChats().length;
 
         // Find existing export button
         const existingButton = document.getElementById('bulk-export-button');
@@ -785,7 +811,10 @@
             childList: true,
             subtree: true,
             attributes: true,
-            attributeFilter: ['checked']
+            // The current table UI toggles selection via the Base UI checkbox button
+            // (aria-checked/data-checked) and the row's data-selected attribute; the
+            // old list UI used the native input's "checked" attribute.
+            attributeFilter: ['checked', 'aria-checked', 'data-checked', 'data-unchecked', 'data-selected', 'data-state']
         });
 
         // Also listen for change events on checkboxes
